@@ -9,6 +9,7 @@ class Users(Base):
     username = Column(String, index=True, unique=True)
     hashed_password = Column(String)
     city = Column(String, index=True)
+    ip = Column(String)
     role = Column(String, default="users")
     # profile_picture=Column(String)
     # location=Column(String)
