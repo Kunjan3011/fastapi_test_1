@@ -8,11 +8,21 @@ class UserCreate(BaseModel):
     city: str
 
 
+class TaskView(BaseModel):
+    id:int
+    name: str
+    description: str
+    created_at: str
+    updated_at: str = Field(default="Not updated yet")
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 
 class TaskCreate(BaseModel):
-    name:str
-    description:str
+    name: str
+    description: str
+
+
