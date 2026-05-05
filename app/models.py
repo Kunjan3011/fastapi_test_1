@@ -21,4 +21,6 @@ class Tasks(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     name = Column(String)
     description = Column(String)
-    date = Column(String)
+    created_at = Column(String)
+    updated_at=Column(String,default="Not updated yet")
+    deleted=Column(String,default="False")
