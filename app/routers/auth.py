@@ -1,7 +1,7 @@
 from datetime import *
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException,Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from passlib.context import CryptContext
@@ -35,8 +35,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login')
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 
-@router.post("/create_user",status_code=status.HTTP_201_CREATED)
-def register_user(db: db_dependency, user: UserCreate,request:Request):
+@router.post("/create_user", status_code=status.HTTP_201_CREATED)
+def register_user(db: db_dependency, user: UserCreate, request: Request):
     db_user = Users(
         username=user.username,
         hashed_password=bcrypt_context.hash(user.password),
@@ -61,7 +61,7 @@ def login_for_access_token(db: db_dependency, form: Annotated[OAuth2PasswordRequ
     if not db_user:
         raise HTTPException(status_code=400, detail='Invalid Username')
     if not bcrypt_context.verify(form.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail='AAuthentication Field')
+        raise HTTPException(status_code=401, detail='Authentication Failed')
     access_token = create_access_token(data={'sub': db_user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 

@@ -8,8 +8,14 @@ class UserCreate(BaseModel):
     city: str
 
 
+class UserView(BaseModel):
+    username: str
+    role: str
+    city: str
+
+
 class TaskView(BaseModel):
-    id:int
+    id: int
     name: str
     description: str
     created_at: str
@@ -24,5 +30,3 @@ class Token(BaseModel):
 class TaskCreate(BaseModel):
     name: str
     description: str
-
-

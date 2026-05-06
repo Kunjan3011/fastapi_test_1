@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, LargeBinary
 
 from app.database import Base
 
@@ -11,7 +11,8 @@ class Users(Base):
     city = Column(String, index=True)
     ip = Column(String)
     role = Column(String, default="users")
-    # profile_picture=Column(String)
+    profile_picture = Column(LargeBinary, nullable=True)
+    profile_file=Column(String)
     # location=Column(String)
 
 
