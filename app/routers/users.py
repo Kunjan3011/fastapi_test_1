@@ -1,32 +1,17 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, Response
-from geopy.geocoders import Nominatim
+
 from sqlalchemy.orm import Session
-from starlette import status
 
 from app.database import SessionLocal
 from app.models import Users
 from app.routers.auth import get_current_user
-from app.schemas import UserUpdate
 
 router = APIRouter(
     tags=['users'],
     prefix="/users"
 )
-
-
-def get_location_by_city(city: str):
-    geolocator = Nominatim(user_agent="fastapi-location-tracker")
-    location = geolocator.geocode(city)
-    if location:
-        return {
-            "city": city,
-            "latitude": location.latitude,
-            "longitude": location.longitude,
-            "address": location.address
-        }
-    return {"city": city, "latitude": None, "longitude": None, "address": None}
 
 
 def get_db():
@@ -72,19 +57,3 @@ def view_profile_photo(db: db_dependency, user: user_dependency, username: str):
     if not db_user.profile_picture:
         raise HTTPException(status_code=404, detail="Profile picture not found")
     return Response(content=db_user.profile_picture, media_type="image/png" or "image/jpeg")
-
-
-@router.put("/update_profile_location/{username}", status_code=status.HTTP_204_NO_CONTENT)
-def update_profile(db: db_dependency, user: user_dependency, username: str, user_update: UserUpdate):
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not authenticated")
-    db_user = db.query(Users).filter(user.username == username).first()
-    if not db_user:
-        raise HTTPException(status_code=404, detail="User not authenticated")
-    geolocator = get_location_by_city(user_update.city)
-    db_user.city = geolocator.get('city')
-    db_user.latitude = geolocator.get('latitude')
-    db_user.longitude = geolocator.get('longitude')
-    db_user.address = geolocator.get('address')
-    db.add(db_user)
-    db.commit()

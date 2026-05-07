@@ -6,7 +6,7 @@ from starlette import status
 from starlette.responses import Response
 
 from app.database import SessionLocal
-from app.models import Tasks, Users
+from app.models import Tasks, Users, UserLogs
 from app.routers.auth import get_current_user
 from app.schemas import UserView
 
@@ -26,6 +26,14 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 user_dependency = Annotated[dict, Depends(get_current_user)]
+
+
+@router.get("/user_logs")
+def view_activity_logs(db: db_dependency, user: user_dependency):
+    if user is None or user.role != 'admin':
+        raise HTTPException(status_code=401, detail="User not authenticated")
+    db_logs = db.query(UserLogs).all()
+    return db_logs
 
 
 @router.get('/view_all_users_tasks')
