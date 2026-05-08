@@ -1,18 +1,17 @@
-import datetime
 from datetime import *
 from typing import Annotated
 
 import ipinfo
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import jwt, JWTError
+from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
 from starlette import status
 
-from app.database import SessionLocal
 from app.models import Users, UserLogs
+
 from app.schemas import UserCreate, Token
+from app.utils.auth_utils import create_access_token
+from app.utils.dependency_utils import db_dependency
 
 token = '97ffc883be38c7'
 
@@ -38,27 +37,22 @@ SECRET_KEY = '2721ccef1f38045ee463c7c3daabc40197d8479421345bbd3e13d9ef866d735e'
 ALGO = 'HS256'
 EXPIRES = 30
 
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-db_dependency = Annotated[Session, Depends(get_db)]
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login')
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 
 @router.post("/create_user", status_code=status.HTTP_201_CREATED)
 def register_user(db: db_dependency, user: UserCreate, request: Request):
+    repeated_username = db.query(Users).filter(Users.username == user.username).first()
+    roles = ["user", "admin"]
+    if repeated_username:
+        raise HTTPException(status_code=406, detail="Username already exists! Try other username.")
+    if user.role.lower() not in roles:
+        raise HTTPException(status_code=406, detail="Enter valid role!")
     location_details = get_location()
     db_user = Users(
         username=user.username,
         hashed_password=bcrypt_context.hash(user.password),
-        role=user.role,
+        role=user.role.lower(),
         city=location_details.get('city'),
         country=location_details.get('country'),
         location=location_details.get('location')
@@ -77,42 +71,49 @@ def register_user(db: db_dependency, user: UserCreate, request: Request):
     db.commit()
 
 
-def create_access_token(data: dict):
-    encode = data.copy()
-    expires = datetime.now(timezone.utc) + timedelta(minutes=EXPIRES)
-    encode.update({'exp': expires})
-    return jwt.encode(encode, SECRET_KEY, algorithm=ALGO)
-
-
 @router.post("/login", response_model=Token)
 def login_for_access_token(db: db_dependency, form: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request):
+    MAX_ATTEMPTS = 3
+    TIME_LIMIT = 5
+    # this is just for defining the time duration according to current time so that this duration get blocked if attempts fail
+    time_window = datetime.now(timezone.utc) - timedelta(minutes=TIME_LIMIT)
     db_user = db.query(Users).filter(Users.username == form.username).first()
     if not db_user:
         raise HTTPException(status_code=400, detail='Invalid Username')
+    recent_attempts = (
+        db.query(UserLogs)
+        .filter(
+            UserLogs.username == form.username,
+            UserLogs.ip == request.client.host,
+            UserLogs.activity == "login_failed",
+            UserLogs.activity_time > time_window
+            #this will satisfy till 3 attempts, after that the attempts will be 3 and this will return 3 and block the login till next 5 minutes
+        )
+        .count()
+    )
+    if recent_attempts >= MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many login requests")
+
     if not bcrypt_context.verify(form.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail='Authentication Failed')
+        failed_log = UserLogs(
+            username=db_user.username,
+            ip=request.client.host,
+            location=db_user.location,
+            activity="login_failed",
+            activity_time=datetime.now(timezone.utc)
+        )
+        db.add(failed_log)
+        db.commit()
+        raise HTTPException(status_code=401, detail="Authentication Failed")
+
     access_token = create_access_token(data={'sub': db_user.username})
-    db_log = UserLogs(
+    success_log = UserLogs(
         username=db_user.username,
         ip=request.client.host,
         location=db_user.location,
-        activity="login",
+        activity="login_success",
         activity_time=datetime.now(timezone.utc)
     )
-    db.add(db_log)
+    db.add(success_log)
     db.commit()
     return {"access_token": access_token, "token_type": "bearer"}
-
-
-def get_current_user(db: db_dependency, token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=ALGO)
-        username = payload.get('sub')
-        if username is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    user = db.query(Users).filter(Users.username == username).first()
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
