@@ -16,6 +16,7 @@ EXPIRES = 30
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login')
 
 
+#create access token for user who login in so that it stays valid till expires time
 def create_access_token(data: dict):
     encode = data.copy()
     expires = datetime.now(timezone.utc) + timedelta(minutes=EXPIRES)
@@ -23,6 +24,7 @@ def create_access_token(data: dict):
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGO)
 
 
+#this is a dependency of auth which will fetch the current user for the endpoint to make user that user get their data properly
 def get_current_user(db: db_dependency, access_token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=ALGO)
@@ -33,7 +35,7 @@ def get_current_user(db: db_dependency, access_token: str = Depends(oauth2_schem
         raise HTTPException(status_code=401, detail="Invalid access token")
     user = db.query(Users).filter(Users.username == username).first()
     if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
