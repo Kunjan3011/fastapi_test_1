@@ -1,7 +1,8 @@
 from datetime import *
 from typing import Annotated
-
+import os
 import ipinfo
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
@@ -13,7 +14,9 @@ from app.schemas import UserCreate, Token
 from app.utils.auth_utils import create_access_token
 from app.utils.dependency_utils import db_dependency
 
-token = '97ffc883be38c7'
+load_dotenv()
+
+token = os.getenv("token")
 
 
 def get_location():

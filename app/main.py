@@ -5,13 +5,13 @@ from app.routers import auth, users, admin, tasks
 
 app = FastAPI()
 
+Base.metadata.create_all(bind=engine)
+
 
 @app.get("/")
 def welcome_page():
     return {"message": "Welcome to Task Management System!"}
 
-
-Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router)
 
