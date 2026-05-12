@@ -57,7 +57,7 @@ def get_user_profile_photo(db: db_dependency, user: user_dependency, username: s
 
 
 #for admin to delete any user
-@router.delete("/delete_any_user/{username}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/delete_any_user/{username}")
 def delete_any_username(db: db_dependency, user: user_dependency, username: str):
     if user is None or user.role != 'admin':
         raise HTTPException(status_code=401, detail="Admin privileges required!")
@@ -66,3 +66,4 @@ def delete_any_username(db: db_dependency, user: user_dependency, username: str)
         raise HTTPException(status_code=404, detail="User not found")
     db.delete(db_user)
     db.commit()
+    return {"message": "User deleted successfully!"}

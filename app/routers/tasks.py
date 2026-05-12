@@ -32,6 +32,7 @@ def create_task(db: db_dependency, user: user_dependency, task: TaskCreate):
     )
     db.add(db_task)
     db.commit()
+    return {"message": "Task created successfully!"}
 
 
 #update the tasks according to the id you entered
@@ -76,3 +77,4 @@ def delete_your_task(db: db_dependency, user: user_dependency, task_id: int):
     db_task.deleted = True
     db.add(db_task)
     db.commit()
+    return {"message": "Task deleted successfully!"}

@@ -2,6 +2,7 @@ from datetime import *
 from typing import Annotated
 import os
 import ipinfo
+import requests
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
@@ -19,16 +20,43 @@ load_dotenv()
 token = os.getenv("token")
 
 
-def get_location():
+def get_location(ip_address: str):
     handler = ipinfo.getHandler(access_token=token)
-    location = handler.getDetails()
+
+    location = handler.getDetails(ip_address)
+
     if location:
         return {
             "city": location.city,
-            "country": location.country_name,
+            "country": location.country,
             "location": location.loc
         }
+
     return {"city": None, "country": None, "location": None}
+
+
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+
+    if forwarded:
+        ip = forwarded.split(",")[0].strip()
+    else:
+        ip = request.client.host
+
+    # Local development
+    if ip in ["127.0.0.1", "::1"]:
+
+        try:
+            # Fetch your public IP
+            ip = requests.get(
+                "https://api64.ipify.org?format=json",
+                timeout=5
+            ).json()["ip"]
+
+        except Exception:
+            pass
+
+    return ip
 
 
 router = APIRouter(
@@ -36,7 +64,7 @@ router = APIRouter(
     prefix='/auth'
 )
 
-SECRET_KEY = '2721ccef1f38045ee463c7c3daabc40197d8479421345bbd3e13d9ef866d735e'
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGO = 'HS256'
 EXPIRES = 30
 
@@ -51,7 +79,8 @@ def register_user(db: db_dependency, user: UserCreate, request: Request):
         raise HTTPException(status_code=406, detail="Username already exists! Try other username.")
     if user.role.lower() not in roles:
         raise HTTPException(status_code=406, detail="Enter valid role!")
-    location_details = get_location()
+    client_ip = get_client_ip(request)
+    location_details = get_location(client_ip)
     db_user = Users(
         username=user.username,
         hashed_password=bcrypt_context.hash(user.password),
@@ -65,13 +94,14 @@ def register_user(db: db_dependency, user: UserCreate, request: Request):
     db.commit()
     db_log = UserLogs(
         username=db_user.username,
-        ip=request.client.host,
+        ip=client_ip,
         location=location_details.get('location'),
         activity="register",
         activity_time=datetime.now(timezone.utc)
     )
     db.add(db_log)
     db.commit()
+    return {"message": "User created successfully!"}
 
 
 @router.post("/login", response_model=Token)
@@ -83,11 +113,12 @@ def login_for_access_token(db: db_dependency, form: Annotated[OAuth2PasswordRequ
     db_user = db.query(Users).filter(Users.username == form.username).first()
     if not db_user:
         raise HTTPException(status_code=400, detail='Invalid Username')
+    client_ip = get_client_ip(request)
     recent_attempts = (
         db.query(UserLogs)
         .filter(
             UserLogs.username == form.username,
-            UserLogs.ip == request.client.host,
+            UserLogs.ip == client_ip,
             UserLogs.activity == "login_failed",
             UserLogs.activity_time > time_window
             #this will satisfy till 3 attempts, after that the attempts will be 3 and this will return 3 and block the login till next 5 minutes
@@ -100,7 +131,7 @@ def login_for_access_token(db: db_dependency, form: Annotated[OAuth2PasswordRequ
     if not bcrypt_context.verify(form.password, db_user.hashed_password):
         failed_log = UserLogs(
             username=db_user.username,
-            ip=request.client.host,
+            ip=client_ip,
             location=db_user.location,
             activity="login_failed",
             activity_time=datetime.now(timezone.utc)
@@ -112,7 +143,7 @@ def login_for_access_token(db: db_dependency, form: Annotated[OAuth2PasswordRequ
     access_token = create_access_token(data={'sub': db_user.username})
     success_log = UserLogs(
         username=db_user.username,
-        ip=request.client.host,
+        ip=client_ip,
         location=db_user.location,
         activity="login_success",
         activity_time=datetime.now(timezone.utc)

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -10,9 +12,9 @@ class UserCreate(BaseModel):
 class UserView(BaseModel):
     username: str
     role: str
-    city: str
-    country: str
-    location: str
+    city: Optional[str] = None
+    country: Optional[str] = None
+    location: Optional[str] = None
 
 
 class TaskView(BaseModel):
