@@ -14,7 +14,7 @@ from app.utils.dependency_utils import db_dependency
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALGO = os.getenv("ALGO")
+ALGO = 'HS256'
 EXPIRES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login')

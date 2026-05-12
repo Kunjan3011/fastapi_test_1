@@ -50,7 +50,7 @@ router = APIRouter(
 )
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALGO = os.getenv("ALGO")
+ALGO = 'HS256'
 EXPIRES = 30
 
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
