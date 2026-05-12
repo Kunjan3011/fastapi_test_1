@@ -1,5 +1,7 @@
+import os
 from typing import Annotated
 
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from datetime import *
@@ -9,8 +11,10 @@ from jose import jwt, JWTError
 from app.models import Users
 from app.utils.dependency_utils import db_dependency
 
-SECRET_KEY = '2721ccef1f38045ee463c7c3daabc40197d8479421345bbd3e13d9ef866d735e'
-ALGO = 'HS256'
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGO = os.getenv("ALGO")
 EXPIRES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login')

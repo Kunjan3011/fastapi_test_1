@@ -2,7 +2,6 @@ from datetime import *
 from typing import Annotated
 import os
 import ipinfo
-import requests
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
@@ -35,27 +34,13 @@ def get_location(ip_address: str):
     return {"city": None, "country": None, "location": None}
 
 
-def get_client_ip(request: Request) -> str:
+def get_client_ip(request: Request):
     forwarded = request.headers.get("x-forwarded-for")
 
     if forwarded:
         ip = forwarded.split(",")[0].strip()
     else:
         ip = request.client.host
-
-    # Local development
-    if ip in ["127.0.0.1", "::1"]:
-
-        try:
-            # Fetch your public IP
-            ip = requests.get(
-                "https://api64.ipify.org?format=json",
-                timeout=5
-            ).json()["ip"]
-
-        except Exception:
-            pass
-
     return ip
 
 
@@ -65,7 +50,7 @@ router = APIRouter(
 )
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALGO = 'HS256'
+ALGO = os.getenv("ALGO")
 EXPIRES = 30
 
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
