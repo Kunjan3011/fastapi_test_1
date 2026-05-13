@@ -14,8 +14,7 @@ class Users(Base):
     country = Column(String)
     location = Column(String)
     role = Column(String, default="users")
-    profile_picture = Column(LargeBinary, nullable=True)
-    profile_file = Column(String)
+    profile_picture = Column(String, nullable=True)
 
 
 class UserLogs(Base):
