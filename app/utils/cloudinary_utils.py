@@ -27,7 +27,7 @@ async def upload_to_cloudinary(image: UploadFile):
 
     try:
         upload_result = upload(image.file, asset_folder="task_management_system")
-        return upload_result["url"]
+        return upload_result["secure_url"]
 
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Cloudinary upload failed")
