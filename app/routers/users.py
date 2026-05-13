@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile
 from starlette.responses import RedirectResponse
 
 from app.models import Users
+from app.schemas import ViewProfilePhoto
 from app.utils.auth_utils import user_dependency
 from app.utils.cloudinary_utils import upload_to_cloudinary
 from app.utils.dependency_utils import db_dependency
@@ -31,7 +32,7 @@ async def upload_profile_photo(db: db_dependency, user: user_dependency, image: 
 
 
 #for user to view their own profile photo
-@router.get("/profile_photo")
+@router.get("/profile_photo",response_model=ViewProfilePhoto)
 def view_profile_photo(db: db_dependency, user: user_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
