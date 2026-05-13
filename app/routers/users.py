@@ -41,7 +41,7 @@ def view_profile_photo(db: db_dependency, user: user_dependency):
         raise HTTPException(status_code=404, detail="User not found")
     if not db_user.profile_picture:
         raise HTTPException(status_code=404, detail="Profile picture not found")
-    return RedirectResponse(url=db_user.profile_picture)  #to redirecting response to cloudinary link of image
+    return db_user.profile_picture  #to redirecting response to cloudinary link of image
 
 
 @router.delete("/profile_photo")
