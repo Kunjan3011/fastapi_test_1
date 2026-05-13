@@ -15,7 +15,7 @@ router = APIRouter(
 
 
 #create task for the user
-@router.post("/create_task", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 def create_task(db: db_dependency, user: user_dependency, task: TaskCreate):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
@@ -36,7 +36,7 @@ def create_task(db: db_dependency, user: user_dependency, task: TaskCreate):
 
 
 #update the tasks according to the id you entered
-@router.put("/update_task/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.put("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def update_tasks(db: db_dependency, user: user_dependency, task: TaskCreate, task_id: int):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
@@ -56,7 +56,7 @@ def update_tasks(db: db_dependency, user: user_dependency, task: TaskCreate, tas
 
 
 #view all your tasks
-@router.get('/view_your_tasks', response_model=list[TaskView])
+@router.get('/', response_model=list[TaskView])
 def view_your_tasks(db: db_dependency, user: user_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")

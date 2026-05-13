@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from starlette import status
-from starlette.responses import Response
+from starlette.responses import Response, RedirectResponse
 
 from app.models import Tasks, Users, UserLogs
 
@@ -15,7 +15,7 @@ router = APIRouter(
 
 
 #for admin to view the all users logs for login and register
-@router.get("/user_logs")
+@router.get("/users/logs")
 def view_activity_logs(db: db_dependency, user: user_dependency):
     if user is None or user.role != 'admin':
         raise HTTPException(status_code=401, detail="Admin privileges required!")
@@ -24,7 +24,7 @@ def view_activity_logs(db: db_dependency, user: user_dependency):
 
 
 #for admin to view all the tasks of every user
-@router.get('/view_all_users_tasks')
+@router.get('/users/tasks')
 def read_all_tasks(db: db_dependency, user: user_dependency):
     if user is None or user.role != 'admin':
         raise HTTPException(status_code=401, detail="Admin privileges required!")
@@ -33,7 +33,7 @@ def read_all_tasks(db: db_dependency, user: user_dependency):
 
 
 #for admin to view all the user present in the database
-@router.get('/view_all_user', response_model=list[UserView])
+@router.get('/users', response_model=list[UserView])
 def read_all_users(db: db_dependency, user: user_dependency):
     if user is None or user.role != 'admin':
         raise HTTPException(status_code=401, detail="Admin privileges required!")
@@ -44,26 +44,26 @@ def read_all_users(db: db_dependency, user: user_dependency):
 
 
 #for admin to view the profile photo of any user according to their username
-@router.get("/view_user_profile_photo/{username}")
+@router.get("/users/{username}/profile_photo")
 def get_user_profile_photo(db: db_dependency, user: user_dependency, username: str):
     if user is None or user.role != 'admin':
         raise HTTPException(status_code=401, detail="Admin privileges required!")
     db_user = db.query(Users).filter(Users.username == username).first()
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if db_user.profile_picture:
-        return Response(content=db_user.profile_picture, media_type="image/png" or "image/jpeg")
-    return HTTPException(status_code=404, detail="This user has not uploaded their profile photo")
+        raise HTTPException(status_code=404, detail="User not found!")
+    if not db_user.profile_picture:
+        raise HTTPException(status_code=404, detail="Profile photo not available!")
+    return RedirectResponse(url=db_user.profile_picture)
 
 
 #for admin to delete any user
-@router.delete("/delete_any_user/{username}")
+@router.delete("/users/{username}")
 def delete_any_username(db: db_dependency, user: user_dependency, username: str):
     if user is None or user.role != 'admin':
         raise HTTPException(status_code=401, detail="Admin privileges required!")
     db_user = db.query(Users).filter(Users.username == username).first()
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found!")
     db.delete(db_user)
     db.commit()
     return {"message": "User deleted successfully!"}

@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, UploadFile, Response
+from fastapi import APIRouter, HTTPException, UploadFile
+from starlette.responses import RedirectResponse
 
 from app.models import Users
 from app.utils.auth_utils import user_dependency
+from app.utils.cloudinary_utils import upload_to_cloudinary
 from app.utils.dependency_utils import db_dependency
 
 router = APIRouter(
@@ -11,29 +13,25 @@ router = APIRouter(
 
 
 #for all users to upload their photo
-@router.post("/upload_profile_photo")
-async def upload_profile_photo(db: db_dependency, user: user_dependency, file: UploadFile):
-    max_size = 5 * 1024 * 1024
-    content_types = ["image/png", "image/jpeg"]
-    if user is None:
+@router.post("/profile_photo")
+async def upload_profile_photo(db: db_dependency, user: user_dependency, image: UploadFile):
+    if not user:
         raise HTTPException(status_code=401, detail="User not authenticated")
-    db_user = db.query(Users).filter(user.username == Users.username).first()
+    db_user = db.query(Users).filter(Users.username == user.username).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    if file.content_type not in content_types:
-        raise HTTPException(status_code=415, detail="File type not valid")
-    file_data = await file.read(size=-1)
-    if file.size > max_size:
-        raise HTTPException(status_code=400, detail="File size not valid")
-    db_user.profile_picture = file_data
-    db_user.profile_file = file.filename
+
+    image_url = await upload_to_cloudinary(image)
+
+    db_user.profile_picture = image_url
     db.add(db_user)
     db.commit()
-    return {"message": "Photo uploaded successfully", "filename": file.filename}
+    db.refresh(db_user)
+    return {"message": "Profile photo uploaded successfully", "image_url": image_url}
 
 
 #for user to view their own profile photo
-@router.get("/view_profile_photo")
+@router.get("/profile_photo")
 def view_profile_photo(db: db_dependency, user: user_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
@@ -42,4 +40,19 @@ def view_profile_photo(db: db_dependency, user: user_dependency):
         raise HTTPException(status_code=404, detail="User not found")
     if not db_user.profile_picture:
         raise HTTPException(status_code=404, detail="Profile picture not found")
-    return Response(content=db_user.profile_picture, media_type="image/png" or "image/jpeg")
+    return RedirectResponse(url=db_user.profile_picture)  #to redirecting response to cloudinary link of image
+
+
+@router.delete("/profile_photo")
+def delete_profile_photo(db: db_dependency, user: user_dependency):
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not authenticated")
+    db_user = db.query(Users).filter(user.username == Users.username).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not db_user.profile_picture:
+        raise HTTPException(status_code=404, detail="Profile picture not found")
+    db_user.profile_picture = None
+    db.add(db_user)
+    db.commit()
+    return {"message": "Profile photo deleted successfully!"}
