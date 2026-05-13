@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class UserCreate(BaseModel):
@@ -16,6 +16,8 @@ class UserView(BaseModel):
     country: Optional[str] = None
     location: Optional[str] = None
 
+class ViewProfilePhoto(BaseModel):
+    profile_picture: HttpUrl
 
 class TaskView(BaseModel):
     id: int
