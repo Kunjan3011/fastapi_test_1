@@ -2,7 +2,7 @@ from time import gmtime, strftime
 
 from fastapi import APIRouter, HTTPException
 from starlette import status
-
+from datetime import *
 from app.models import Tasks
 from app.schemas import TaskView, TaskCreate
 from app.utils.auth_utils import user_dependency
@@ -28,7 +28,7 @@ def create_task(db: db_dependency, user: user_dependency, task: TaskCreate):
         user_id=user.id,
         completed=task.completed.lower(),
         priority=task.priority,
-        created_at=strftime("%d %b %Y %H:%M:%S", gmtime()),
+        created_at=datetime.now(timezone.utc),
         deleted=False
     )
     db.add(db_task)
@@ -54,7 +54,7 @@ def update_tasks(db: db_dependency, user: user_dependency, task: TaskCreate, tas
     db_task.description = task.description
     db_task.priority = task.priority
     db_task.completed = task.completed.lower()
-    db_task.updated_at = strftime("%d %b %Y %H:%M:%S", gmtime())
+    db_task.updated_at = datetime.now(timezone.utc)
     db.add(db_task)
     db.commit()
     return {

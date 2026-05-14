@@ -1,3 +1,4 @@
+from datetime import *
 from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl
@@ -27,8 +28,8 @@ class TaskView(BaseModel):
     description: str
     priority: int
     completed: str
-    created_at: str
-    updated_at: str = Field(default="Not updated yet")
+    created_at: datetime = Field(default=datetime.now(timezone.utc))
+    updated_at: Optional[datetime]=None
 
 
 class Token(BaseModel):
