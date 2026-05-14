@@ -38,6 +38,6 @@ class Tasks(Base):
     completed = Column(String, default="no")
     priority = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=None)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
     deleted = Column(Boolean, default=False)
     owner = relationship("Users", back_populates="tasks")

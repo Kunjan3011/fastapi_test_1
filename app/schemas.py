@@ -29,7 +29,7 @@ class TaskView(BaseModel):
     priority: int
     completed: str
     created_at: datetime = Field(default=datetime.now(timezone.utc))
-    updated_at: Optional[datetime]=None
+    updated_at: Optional[datetime] = None
 
 
 class Token(BaseModel):

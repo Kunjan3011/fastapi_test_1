@@ -35,7 +35,7 @@ def create_task(db: db_dependency, user: user_dependency, task: TaskCreate):
     db.commit()
     return {"message": f"Task created successfully!",
             "success": True,
-            "task_id": db_task.id}  
+            "task_id": db_task.id}
 
 
 #update the tasks according to the id you entered
@@ -64,7 +64,7 @@ def update_tasks(db: db_dependency, user: user_dependency, task: TaskCreate, tas
 
 
 #view all your tasks
-@router.get('/', response_model=list[TaskView],status_code=status.HTTP_200_OK)
+@router.get('/', response_model=list[TaskView], status_code=status.HTTP_200_OK)
 def view_your_tasks(db: db_dependency, user: user_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
