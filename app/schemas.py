@@ -16,8 +16,10 @@ class UserView(BaseModel):
     country: Optional[str] = None
     location: Optional[str] = None
 
+
 class ViewProfilePhoto(BaseModel):
     profile_picture: HttpUrl
+
 
 class TaskView(BaseModel):
     id: int
@@ -30,6 +32,8 @@ class TaskView(BaseModel):
 
 
 class Token(BaseModel):
+    message: str
+    success: bool = Field(default=False)
     access_token: str
     token_type: str
 

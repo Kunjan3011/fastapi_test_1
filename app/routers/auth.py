@@ -34,7 +34,7 @@ def login_for_access_token(db: db_dependency, form: Annotated[OAuth2PasswordRequ
     time_window = datetime.now(timezone.utc) - timedelta(minutes=TIME_LIMIT)
     db_user = db.query(Users).filter(Users.username == form.username).first()
     if not db_user:
-        raise HTTPException(status_code=400, detail='Invalid Username')
+        raise HTTPException(status_code=400, detail='Invalid Username!')
     client_ip = get_client_ip(request)
     recent_attempts = (
         db.query(UserLogs)
@@ -60,7 +60,7 @@ def login_for_access_token(db: db_dependency, form: Annotated[OAuth2PasswordRequ
         )
         db.add(failed_log)
         db.commit()
-        raise HTTPException(status_code=401, detail="Authentication Failed")
+        raise HTTPException(status_code=401, detail="Authentication Failed!")
 
     access_token = create_access_token(data={'sub': db_user.username})
     success_log = UserLogs(
@@ -72,7 +72,10 @@ def login_for_access_token(db: db_dependency, form: Annotated[OAuth2PasswordRequ
     )
     db.add(success_log)
     db.commit()
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"message": f"Welcome back {db_user.username}!",
+            "success": True,
+            "access_token": access_token,
+            "token_type": "bearer"}
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -105,4 +108,6 @@ def register_user(db: db_dependency, user: UserCreate, request: Request):
     )
     db.add(db_log)
     db.commit()
-    return {"message": "User created successfully!"}
+    return {"message": "User created successfully!",
+            "success": True,
+            "username": db_user.username}

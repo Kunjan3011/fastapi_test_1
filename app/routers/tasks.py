@@ -20,7 +20,8 @@ def create_task(db: db_dependency, user: user_dependency, task: TaskCreate):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
     if task.completed.lower() not in ["yes", "no"]:
-        raise HTTPException(status_code=406, detail="Task completed value is not valid! Enter Yes or No.")
+        raise HTTPException(status_code=406,
+                            detail=f"Task completed value {task.completed} is not valid! Enter Yes or No.")
     db_task = Tasks(
         name=task.name,
         description=task.description,
@@ -32,16 +33,19 @@ def create_task(db: db_dependency, user: user_dependency, task: TaskCreate):
     )
     db.add(db_task)
     db.commit()
-    return {"message": "Task created successfully!"}
+    return {"message": f"Task created successfully!",
+            "success": True,
+            "task_id": db_task.id}  
 
 
 #update the tasks according to the id you entered
-@router.put("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.put("/{task_id}", status_code=status.HTTP_200_OK)
 def update_tasks(db: db_dependency, user: user_dependency, task: TaskCreate, task_id: int):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
     if task.completed.lower() not in ["yes", "no"]:
-        raise HTTPException(status_code=406, detail="Task completed value is not valid! Enter Yes or No.")
+        raise HTTPException(status_code=406,
+                            detail=f"Task completed value {task.completed} is not valid! Enter Yes or No")
     db_task = db.query(Tasks).filter(Tasks.user_id == user.id).filter(
         Tasks.deleted == False).filter(Tasks.id == task_id).first()
     if not db_task:
@@ -53,10 +57,14 @@ def update_tasks(db: db_dependency, user: user_dependency, task: TaskCreate, tas
     db_task.updated_at = strftime("%d %b %Y %H:%M:%S", gmtime())
     db.add(db_task)
     db.commit()
+    return {
+        "message": f"Task {db_task.id} is updated successfully!",
+        "success": True
+    }
 
 
 #view all your tasks
-@router.get('/', response_model=list[TaskView])
+@router.get('/', response_model=list[TaskView],status_code=status.HTTP_200_OK)
 def view_your_tasks(db: db_dependency, user: user_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
@@ -67,7 +75,7 @@ def view_your_tasks(db: db_dependency, user: user_dependency):
 
 
 #delete tasks by id
-@router.delete('/delete_your_task/{task_id}')
+@router.delete('/{task_id}', status_code=status.HTTP_200_OK)
 def delete_your_task(db: db_dependency, user: user_dependency, task_id: int):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
@@ -77,4 +85,7 @@ def delete_your_task(db: db_dependency, user: user_dependency, task_id: int):
     db_task.deleted = True
     db.add(db_task)
     db.commit()
-    return {"message": "Task deleted successfully!"}
+    return {
+        "message": f"Task {task_id} deleted successfully!",
+        "success": True
+    }

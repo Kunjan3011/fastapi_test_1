@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, UploadFile
-from starlette.responses import RedirectResponse
+from starlette import status
 
 from app.models import Users
 from app.schemas import ViewProfilePhoto
@@ -14,7 +14,7 @@ router = APIRouter(
 
 
 #for all users to upload their photo
-@router.post("/profile_photo")
+@router.post("/profile_photo", status_code=status.HTTP_200_OK)
 async def upload_profile_photo(db: db_dependency, user: user_dependency, image: UploadFile):
     if not user:
         raise HTTPException(status_code=401, detail="User not authenticated")
@@ -28,11 +28,13 @@ async def upload_profile_photo(db: db_dependency, user: user_dependency, image: 
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return {"message": "Profile photo uploaded successfully", "image_url": image_url}
+    return {"message": "Profile photo uploaded successfully",
+            "success": True,
+            "image_url": image_url}
 
 
 #for user to view their own profile photo
-@router.get("/profile_photo",response_model=ViewProfilePhoto)
+@router.get("/profile_photo", response_model=ViewProfilePhoto, status_code=status.HTTP_200_OK)
 def view_profile_photo(db: db_dependency, user: user_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
@@ -44,7 +46,7 @@ def view_profile_photo(db: db_dependency, user: user_dependency):
     return {"profile_picture": db_user.profile_picture}  #to redirecting response to cloudinary link of image
 
 
-@router.delete("/profile_photo")
+@router.delete("/profile_photo", status_code=status.HTTP_200_OK)
 def delete_profile_photo(db: db_dependency, user: user_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail="User not authenticated")
@@ -56,4 +58,5 @@ def delete_profile_photo(db: db_dependency, user: user_dependency):
     db_user.profile_picture = None
     db.add(db_user)
     db.commit()
-    return {"message": "Profile photo deleted successfully!"}
+    return {"message": "Profile photo deleted successfully!",
+            "success": True}
